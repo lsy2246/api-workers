@@ -24,13 +24,15 @@ bun run dev:worker
 
 环境变量（`apps/worker/wrangler.toml` 或 `wrangler secret put`）：
 
-- `ADMIN_PASSWORD` 管理员密码
-- `SESSION_TTL_HOURS` 管理会话时长（小时）
-- `LOG_RETENTION_DAYS` 日志保留天数
 - `CORS_ORIGIN` 允许的管理台来源
 - `PROXY_RETRY_ROUNDS` 代理失败轮询次数（默认 2）
 - `PROXY_RETRY_DELAY_MS` 轮询间隔（毫秒，默认 200）
-- `NEW_API_ADMIN_TOKEN` New API 兼容接口的管理员令牌
+
+系统设置（管理台 → 系统设置）：
+
+- 日志保留天数（默认 30）
+- 会话时长（小时，默认 12）
+- 管理员密码（首次登录自动初始化，可在系统设置中修改）
 
 ### 3) Admin UI
 
@@ -56,7 +58,7 @@ bun run fix
 为了支持 all-api-hub 等插件同步渠道，Worker 提供 New API 风格的渠道管理接口：
 
 - 路径前缀：`/api/channel`
-- 认证方式：`Authorization: Bearer {NEW_API_ADMIN_TOKEN}`（或管理台登录 token）
+- 认证方式：`Authorization: Bearer {管理员密码}`（或管理台登录 token）
 - 可选请求头：`New-Api-User: 1`
 
 支持的常用接口：
@@ -79,6 +81,14 @@ bun run fix
 bun run --filter new-api-lite-worker db:migrate
 ```
 
+## 忘记管理员密码
+
+管理员密码存储为哈希，可通过删除设置记录来重置，下一次登录会用输入的密码重新初始化：
+
+```bash
+bunx wrangler d1 execute DB --command "DELETE FROM settings WHERE key = 'admin_password_hash';"
+```
+
 ## 生产部署
 
 ### 1) 准备 Cloudflare 资源
@@ -89,12 +99,7 @@ bun run --filter new-api-lite-worker db:migrate
 bunx wrangler d1 create new_api_lite
 ```
 
-2. 设置 Worker 变量与密钥（推荐用 secret）：
-
-```bash
-bunx wrangler secret put ADMIN_PASSWORD
-bunx wrangler secret put NEW_API_ADMIN_TOKEN
-```
+2. 设置 Worker 变量与密钥（如 CORS_ORIGIN）：
 
 其他变量可继续放在 `apps/worker/wrangler.toml` 的 `[vars]` 中，`CORS_ORIGIN` 需指向管理台域名。
 

@@ -3,13 +3,9 @@ main = "src/index.ts"
 compatibility_date = "2026-02-14"
 
 [vars]
-ADMIN_PASSWORD = "lsy"
 CORS_ORIGIN = "http://localhost:5173"
-SESSION_TTL_HOURS = "12"
-LOG_RETENTION_DAYS = "30"
 PROXY_RETRY_ROUNDS = "2"
 PROXY_RETRY_DELAY_MS = "200"
-NEW_API_ADMIN_TOKEN = "sk-newapi-admin"
 
 [[d1_databases]]
 binding = "DB"

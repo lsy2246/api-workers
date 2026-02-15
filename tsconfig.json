@@ -1,10 +1,20 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "strict": true,
-    "types": ["vitest/globals"],
-    "skipLibCheck": true
-  }
+	"exclude": ["**/dist", "helloagents", "tests", "**/node_modules"],
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"jsx": "react-jsx",
+		"jsxImportSource": "hono/jsx/dom",
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"strict": true,
+		"typeRoots": [
+			"./node_modules",
+			"./node_modules/@types",
+			"./apps/admin/node_modules",
+			"./apps/worker/node_modules"
+		],
+		"types": ["vitest/globals", "vite/client", "@cloudflare/workers-types"],
+		"skipLibCheck": true
+	}
 }

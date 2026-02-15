@@ -11,7 +11,8 @@
 ## 行为规范
 - 基于令牌鉴权
 - 按渠道权重随机排序
-- 非流式响应解析 usage 字段
+- 支持从非流式 JSON、响应头与流式 SSE 解析 usage 字段
+- 流式请求自动补 `stream_options.include_usage=true` 以便上游返回 usage
 - 可配置失败重试轮询（响应 5xx/429 时触发）
 
 ## 依赖关系

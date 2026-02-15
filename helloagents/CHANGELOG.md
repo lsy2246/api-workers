@@ -3,6 +3,21 @@
 ## [Unreleased]
 
 ### 微调
+- **[tooling]**: 修复 bun check 脚本名称（移除尾随空格）
+  - 类型: 微调（无方案包）
+  - 文件: package.json
+- **[admin-ui]**: 渠道创建移除 ID 字段并校验名称唯一
+  - 类型: 微调（无方案包）
+  - 文件: apps/admin/src/main.tsx:250-287, 664-829
+- **[worker]**: 全局记录收到的请求概要
+  - 类型: 微调（无方案包）
+  - 文件: apps/worker/src/index.ts
+- **[worker]**: base_url 为空时返回空字符串避免崩溃
+  - 类型: 微调（无方案包）
+  - 文件: apps/worker/src/utils/url.ts
+- **[tooling]**: dev 脚本改为 Bun workspace 执行
+  - 类型: 微调（无方案包）
+  - 文件: package.json
 - **[admin-ui]**: 本地开发增加 Vite proxy 解决前后端端口不一致
   - 类型: 微调（无方案包）
   - 文件: apps/admin/vite.config.ts, README.md
@@ -36,6 +51,35 @@
 - **[worker]**: 新增 `/api/group` 兼容接口并放行鉴权
   - 类型: 微调（无方案包）
   - 文件: apps/worker/src/index.ts, apps/worker/src/routes/newapiGroups.ts, tests/worker/newapi.test.ts
+- **[proxy]**: 流式请求自动补 `stream_options.include_usage` 以获取 usage
+  - 类型: 微调（无方案包）
+  - 文件: apps/worker/src/routes/proxy.ts
+
+## [0.4.1] - 2026-02-15
+
+### 变更
+- **[admin-ui]**: 管理台入口拆分为模块、扁平化 features，并将 AppShell 调整为 AppLayout
+  - 方案: [202602152325_admin-ui-modularize](archive/2026-02/202602152325_admin-ui-modularize/)
+  - 决策: admin-ui-modularize#D001(功能域拆分)
+
+## [0.4.0] - 2026-02-15
+
+### 新增
+- **[channels]**: New API 标签批量权重/启用/停用接口
+  - 方案: [202602152211_newapi-tag-sync](archive/2026-02/202602152211_newapi-tag-sync/)
+
+## [0.3.1] - 2026-02-15
+
+### 修复
+- **[proxy]**: 增强 usage 解析以修复使用日志与数据面板 token 统计为 0
+  - 方案: [202602151843_fix-usage-tokens](archive/2026-02/202602151843_fix-usage-tokens/)
+
+## [0.3.0] - 2026-02-15
+
+### 变更
+- **[admin-ui]**: 管理台改为 Hono + TSX DOM 渲染并接入 Tailwind v4
+  - 方案: [202602151628_admin-ui-hono-tsx-tailwind](archive/2026-02/202602151628_admin-ui-hono-tsx-tailwind/)
+  - 决策: admin-ui-hono-tsx-tailwind#D001(采用 Hono JSX DOM + Tailwind)
 
 ## [0.2.1] - 2026-02-15
 
