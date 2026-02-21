@@ -1,24 +1,16 @@
 import { safeJsonParse } from "../utils/json";
 import { normalizeBaseUrl } from "../utils/url";
+import type { ChannelRow } from "./channel-types";
+import {
+	extractModelIds,
+	modelsToJson,
+	normalizeModelsInput,
+} from "./channel-models";
+import { toInternalStatus, toNewApiStatus } from "./channel-status";
 
-export type ChannelRow = {
-	id: string;
-	name: string;
-	base_url: string;
-	api_key: string;
-	weight: number;
-	status: string;
-	rate_limit?: number | null;
-	models_json?: string | null;
-	type?: number | null;
-	group_name?: string | null;
-	priority?: number | null;
-	metadata_json?: string | null;
-	test_time?: number | string | null;
-	response_time_ms?: number | null;
-	created_at?: string | null;
-	updated_at?: string | null;
-};
+export { extractModelIds, modelsToJson, normalizeModelsInput };
+export { toInternalStatus, toNewApiStatus };
+export type { ChannelRow };
 
 export type NewApiChannel = {
 	id: string;
@@ -77,8 +69,6 @@ export type ParsedChannelInput = {
 	priority?: number;
 	metadata_json?: string | null;
 };
-
-type ModelLike = { id?: unknown };
 
 const DEFAULT_CHANNEL_INFO: ChannelInfo = {
 	is_multi_key: false,
@@ -155,17 +145,6 @@ export function withNewApiDefaults<T extends Record<string, unknown>>(
 	return merged as T & typeof DEFAULT_NEWAPI_FIELDS;
 }
 
-function toModelId(item: unknown): string {
-	if (item && typeof item === "object" && "id" in item) {
-		const value = (item as ModelLike).id;
-		return value === undefined || value === null ? "" : String(value);
-	}
-	if (item === undefined || item === null) {
-		return "";
-	}
-	return String(item);
-}
-
 function toNumber(
 	value: unknown,
 	fallback: number | null = null,
@@ -175,82 +154,6 @@ function toNumber(
 	}
 	const parsed = Number(value);
 	return Number.isNaN(parsed) ? fallback : parsed;
-}
-
-export function normalizeModelsInput(input: unknown): string[] {
-	if (!input) {
-		return [];
-	}
-	if (Array.isArray(input)) {
-		return input.map((item) => String(item)).filter((item) => item.length > 0);
-	}
-	if (typeof input === "string") {
-		return input
-			.split(",")
-			.map((item) => item.trim())
-			.filter((item) => item.length > 0);
-	}
-	if (typeof input === "object") {
-		const raw = input as { data?: unknown[] };
-		if (Array.isArray(raw.data)) {
-			return raw.data
-				.map((item) => toModelId(item))
-				.filter((item) => item.length > 0);
-		}
-	}
-	return [];
-}
-
-export function modelsToJson(models: string[]): string {
-	const normalized = models
-		.map((model) => String(model).trim())
-		.filter((model) => model.length > 0);
-	return JSON.stringify(normalized.map((id) => ({ id })));
-}
-
-export function extractModelIds(channel: ChannelRow): string[] {
-	const raw = safeJsonParse<ModelLike[] | { data?: ModelLike[] } | null>(
-		channel.models_json,
-		null,
-	);
-	const models = Array.isArray(raw)
-		? raw
-		: Array.isArray(raw?.data)
-			? raw.data
-			: [];
-	return models
-		.map((model) => toModelId(model))
-		.filter((model: string) => model.length > 0);
-}
-
-export function toInternalStatus(status: unknown): string {
-	if (status === undefined || status === null) {
-		return "active";
-	}
-	if (typeof status === "string") {
-		const normalized = status.trim().toLowerCase();
-		if (["1", "true", "enabled", "enable", "active"].includes(normalized)) {
-			return "active";
-		}
-		if (
-			["0", "2", "false", "disabled", "disable", "inactive"].includes(
-				normalized,
-			)
-		) {
-			return "disabled";
-		}
-	}
-	if (typeof status === "number") {
-		return status === 1 ? "active" : "disabled";
-	}
-	if (typeof status === "boolean") {
-		return status ? "active" : "disabled";
-	}
-	return "active";
-}
-
-export function toNewApiStatus(status: string | null | undefined): number {
-	return status === "active" ? 1 : 2;
 }
 
 export function normalizeChannelInput(

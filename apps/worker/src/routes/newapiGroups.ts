@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { AppEnv } from "../env";
 import { newApiAuth } from "../middleware/newApiAuth";
+import { newApiSuccess } from "../utils/newapi-response";
 
 const groups = new Hono<AppEnv>({ strict: false });
 groups.use("*", newApiAuth);
@@ -33,11 +34,7 @@ groups.get("/", async (c) => {
 	const data = collectGroups(
 		(result.results ?? []) as Array<{ group_name?: string | null }>,
 	);
-	return c.json({
-		success: true,
-		message: "",
-		data,
-	});
+	return newApiSuccess(c, data);
 });
 
 export default groups;

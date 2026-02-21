@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { AppEnv } from "../env";
-import { type ChannelRecord, extractModels } from "../services/channels";
+import { extractModels } from "../services/channel-models";
+import { listActiveChannels } from "../services/channel-repo";
 
 const models = new Hono<AppEnv>();
 
@@ -8,12 +9,7 @@ const models = new Hono<AppEnv>();
  * Returns aggregated models from all channels.
  */
 models.get("/", async (c) => {
-	const result = await c.env.DB.prepare(
-		"SELECT * FROM channels WHERE status = ?",
-	)
-		.bind("active")
-		.all();
-	const channels = (result.results ?? []) as ChannelRecord[];
+	const channels = await listActiveChannels(c.env.DB);
 	const entries = channels.flatMap((channel) => extractModels(channel));
 
 	const map = new Map<

@@ -1,6 +1,17 @@
 import { Hono } from "hono";
 import type { AppEnv } from "../env";
-import type { ChannelRecord } from "../services/channels";
+import {
+	channelExists,
+	deleteChannel,
+	getChannelById,
+	insertChannel,
+	listChannels,
+	updateChannel,
+} from "../services/channel-repo";
+import {
+	fetchChannelModels,
+	updateChannelTestResult,
+} from "../services/channel-testing";
 import { generateToken } from "../utils/crypto";
 import { jsonError } from "../utils/http";
 import { safeJsonParse } from "../utils/json";
@@ -44,10 +55,11 @@ function resolveChannelId(body: ChannelPayload | null): string | null {
  * Lists all channels.
  */
 channels.get("/", async (c) => {
-	const result = await c.env.DB.prepare(
-		"SELECT * FROM channels ORDER BY created_at DESC",
-	).all();
-	return c.json({ channels: result.results ?? [] });
+	const rows = await listChannels(c.env.DB, {
+		orderBy: "created_at",
+		order: "DESC",
+	});
+	return c.json({ channels: rows });
 });
 
 /**
@@ -61,11 +73,7 @@ channels.post("/", async (c) => {
 
 	const requestedId = resolveChannelId(body);
 	if (requestedId) {
-		const exists = await c.env.DB.prepare(
-			"SELECT id FROM channels WHERE id = ?",
-		)
-			.bind(requestedId)
-			.first();
+		const exists = await channelExists(c.env.DB, requestedId);
 		if (exists) {
 			return jsonError(c, 409, "channel_id_exists", "channel_id_exists");
 		}
@@ -74,22 +82,22 @@ channels.post("/", async (c) => {
 	const id = requestedId ?? generateToken("ch_");
 	const now = nowIso();
 
-	await c.env.DB.prepare(
-		"INSERT INTO channels (id, name, base_url, api_key, weight, status, rate_limit, models_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-	)
-		.bind(
-			id,
-			body.name,
-			normalizeBaseUrl(String(body.base_url)),
-			body.api_key,
-			Number(body.weight ?? 1),
-			body.status ?? "active",
-			body.rate_limit ?? 0,
-			JSON.stringify(body.models ?? []),
-			now,
-			now,
-		)
-		.run();
+	await insertChannel(c.env.DB, {
+		id,
+		name: body.name,
+		base_url: normalizeBaseUrl(String(body.base_url)),
+		api_key: body.api_key,
+		weight: Number(body.weight ?? 1),
+		status: body.status ?? "active",
+		rate_limit: body.rate_limit ?? 0,
+		models_json: JSON.stringify(body.models ?? []),
+		type: 1,
+		group_name: null,
+		priority: 0,
+		metadata_json: null,
+		created_at: now,
+		updated_at: now,
+	});
 
 	return c.json({ id });
 });
@@ -104,30 +112,27 @@ channels.patch("/:id", async (c) => {
 		return jsonError(c, 400, "missing_body", "missing_body");
 	}
 
-	const current = await c.env.DB.prepare("SELECT * FROM channels WHERE id = ?")
-		.bind(id)
-		.first<ChannelRecord>();
+	const current = await getChannelById(c.env.DB, id);
 	if (!current) {
 		return jsonError(c, 404, "channel_not_found", "channel_not_found");
 	}
 
 	const models = body.models ?? safeJsonParse(current.models_json, []);
 
-	await c.env.DB.prepare(
-		"UPDATE channels SET name = ?, base_url = ?, api_key = ?, weight = ?, status = ?, rate_limit = ?, models_json = ?, updated_at = ? WHERE id = ?",
-	)
-		.bind(
-			body.name ?? current.name,
-			normalizeBaseUrl(String(body.base_url ?? current.base_url)),
-			body.api_key ?? current.api_key,
-			Number(body.weight ?? current.weight ?? 1),
-			body.status ?? current.status,
-			body.rate_limit ?? current.rate_limit ?? 0,
-			JSON.stringify(models),
-			nowIso(),
-			id,
-		)
-		.run();
+	await updateChannel(c.env.DB, id, {
+		name: body.name ?? current.name,
+		base_url: normalizeBaseUrl(String(body.base_url ?? current.base_url)),
+		api_key: body.api_key ?? current.api_key,
+		weight: Number(body.weight ?? current.weight ?? 1),
+		status: body.status ?? current.status,
+		rate_limit: body.rate_limit ?? current.rate_limit ?? 0,
+		models_json: JSON.stringify(models),
+		type: current.type ?? 1,
+		group_name: current.group_name ?? null,
+		priority: current.priority ?? 0,
+		metadata_json: current.metadata_json ?? null,
+		updated_at: nowIso(),
+	});
 
 	return c.json({ ok: true });
 });
@@ -137,7 +142,7 @@ channels.patch("/:id", async (c) => {
  */
 channels.delete("/:id", async (c) => {
 	const id = c.req.param("id");
-	await c.env.DB.prepare("DELETE FROM channels WHERE id = ?").bind(id).run();
+	await deleteChannel(c.env.DB, id);
 	return c.json({ ok: true });
 });
 
@@ -146,41 +151,31 @@ channels.delete("/:id", async (c) => {
  */
 channels.post("/:id/test", async (c) => {
 	const id = c.req.param("id");
-	const channel = await c.env.DB.prepare("SELECT * FROM channels WHERE id = ?")
-		.bind(id)
-		.first();
+	const channel = await getChannelById(c.env.DB, id);
 	if (!channel) {
 		return jsonError(c, 404, "channel_not_found", "channel_not_found");
 	}
 
-	const target = `${normalizeBaseUrl(String(channel.base_url))}/v1/models`;
-	const response = await fetch(target, {
-		method: "GET",
-		headers: {
-			Authorization: `Bearer ${channel.api_key}`,
-			"x-api-key": String(channel.api_key),
-			"Content-Type": "application/json",
-		},
-	});
+	const result = await fetchChannelModels(
+		String(channel.base_url),
+		String(channel.api_key),
+	);
 
-	if (!response.ok) {
-		await c.env.DB.prepare(
-			"UPDATE channels SET status = ?, updated_at = ? WHERE id = ?",
-		)
-			.bind("error", nowIso(), id)
-			.run();
+	if (!result.ok) {
+		await updateChannelTestResult(c.env.DB, id, {
+			ok: false,
+			elapsed: result.elapsed,
+		});
 		return jsonError(c, 502, "channel_unreachable", "channel_unreachable");
 	}
 
-	const payload = (await response.json().catch(() => ({ data: [] }))) as
-		| { data?: unknown[] }
-		| unknown[];
+	const payload = result.payload ?? { data: [] };
 	const models = Array.isArray(payload) ? payload : (payload?.data ?? []);
-	await c.env.DB.prepare(
-		"UPDATE channels SET status = ?, models_json = ?, updated_at = ? WHERE id = ?",
-	)
-		.bind("active", JSON.stringify(payload), nowIso(), id)
-		.run();
+	await updateChannelTestResult(c.env.DB, id, {
+		ok: true,
+		elapsed: result.elapsed,
+		modelsJson: JSON.stringify(payload),
+	});
 
 	return c.json({ ok: true, models });
 });
