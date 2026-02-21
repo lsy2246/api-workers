@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### 微调
+- **[docs]**: 补充本地开发流程、API 接口与 GitHub Actions 自动部署说明
+  - 类型: 微调（无方案包）
+  - 文件: README.md:12-272
 - **[worker]**: 补齐 admin 静态目录占位以通过 wrangler assets 检查
   - 类型: 微调（无方案包）
   - 文件: apps/ui/dist/.gitkeep

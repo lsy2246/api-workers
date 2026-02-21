@@ -16,9 +16,7 @@ function readEffort(value: unknown): string | number | null {
  * Returns:
  *   Reasoning effort value, if present.
  */
-export function extractReasoningEffort(
-	input: unknown,
-): string | number | null {
+export function extractReasoningEffort(input: unknown): string | number | null {
 	if (!input || typeof input !== "object") {
 		return null;
 	}

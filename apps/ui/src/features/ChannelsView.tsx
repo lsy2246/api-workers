@@ -162,7 +162,9 @@ export const ChannelsView = ({
 				</div>
 				<div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-stone-500">
 					<div class="flex flex-wrap items-center gap-2">
-						<span class="text-xs text-stone-500">共 {channelTotalPages} 页</span>
+						<span class="text-xs text-stone-500">
+							共 {channelTotal} 条 · {channelTotalPages} 页
+						</span>
 						<button
 							class="h-8 w-8 rounded-full border border-stone-200 bg-white text-xs font-semibold text-stone-600 transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:text-stone-900 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60"
 							type="button"
@@ -178,7 +180,7 @@ export const ChannelsView = ({
 								</span>
 							) : (
 								<button
-									class={`h-8 min-w-[32px] rounded-full border px-3 text-xs font-semibold transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+									class={`h-8 min-w-8 rounded-full border px-3 text-xs font-semibold transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
 										item === channelPage
 											? "border-stone-900 bg-stone-900 text-white shadow-md"
 											: "border-stone-200 bg-white text-stone-600 hover:-translate-y-0.5 hover:text-stone-900 hover:shadow-md"

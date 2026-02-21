@@ -121,8 +121,9 @@ app.notFound((c) => {
 	) {
 		return c.json({ error: "Not Found" }, 404);
 	}
-	const assets = (c.env as { ASSETS?: { fetch: (input: Request) => Promise<Response> } })
-		.ASSETS;
+	const assets = (
+		c.env as { ASSETS?: { fetch: (input: Request) => Promise<Response> } }
+	).ASSETS;
 	return assets ? assets.fetch(c.req.raw) : c.text("Not Found", 404);
 });
 

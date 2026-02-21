@@ -19,9 +19,12 @@ const formatSeconds = (value: number | null | undefined) => {
 	return `${(value / 1000).toFixed(2)} s`;
 };
 
-const formatStream = (value: boolean | null | undefined) => {
+const formatStream = (value: boolean | number | null | undefined) => {
 	if (value === null || value === undefined) {
 		return "-";
+	}
+	if (typeof value === "number") {
+		return value > 0 ? "是" : "否";
 	}
 	return value ? "是" : "否";
 };
@@ -193,7 +196,7 @@ export const UsageView = ({ usage, onRefresh }: UsageViewProps) => {
 							</span>
 						) : (
 							<button
-								class={`h-8 min-w-[32px] rounded-full border px-3 text-xs font-semibold transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+								class={`h-8 min-w-8 rounded-full border px-3 text-xs font-semibold transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
 									item === page
 										? "border-stone-900 bg-stone-900 text-white shadow-md"
 										: "border-stone-200 bg-white text-stone-600 hover:-translate-y-0.5 hover:text-stone-900 hover:shadow-md"
